@@ -1,4 +1,5 @@
 from openai import OpenAI
+import re
 
 class Chatgpt:
     def __init__(self, global_config):
@@ -16,8 +17,8 @@ class Chatgpt:
         if not prompt_template:
             return "Error: Prompt template not provided in function configuration."
 
-        # Replace "{SRC_TEXT}" in the prompt template with the input text
-        prompt = prompt_template.replace('{SRC_TEXT}', text.strip())
+        # Recursive placeholder replacement
+        prompt = self.replace_placeholders(prompt_template, text, params)
 
         # Get model, max_tokens, and temperature from params, with default values
         model = params.get('model', 'gpt-3.5-turbo')   # Default model
@@ -41,3 +42,31 @@ class Chatgpt:
 
         except Exception as e:
             return f"Error communicating with OpenAI API: {e}"
+
+    def replace_placeholders(self, prompt, src_text, params):
+        # Function to recursively replace placeholders within the prompt
+        pattern = re.compile(r'(?<!\\)\{(.*?)(?<!\\)\}')
+        iteration = 0
+        max_iterations = 10  # Prevent infinite loops
+
+        while True:
+            matches = pattern.findall(prompt)
+            if not matches or iteration >= max_iterations:
+                break
+            for match in matches:
+                placeholder = f'{{{match}}}'
+                replacement = ''
+
+                if match == 'SRC_TEXT':
+                    replacement = src_text.strip()
+                else:
+                    # If the placeholder is in params, use its value
+                    replacement = params.get(match, '')
+
+                prompt = prompt.replace(placeholder, replacement)
+            iteration += 1
+
+        # Unescape any escaped braces
+        prompt = prompt.replace('\{', '{').replace('\}', '}')
+
+        return prompt

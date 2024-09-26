@@ -5,6 +5,8 @@ import os
 import yaml
 import importlib.util
 import platform
+import re
+
 
 def new_file(event=None):
     global file_path
@@ -159,6 +161,28 @@ def load_last_opened_file():
             print(f"Failed to load last opened file: {e}")
     return None
 
+def process_includes(obj, prompts_dir):
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            obj[key] = process_includes(value, prompts_dir)
+    elif isinstance(obj, list):
+        obj = [process_includes(item, prompts_dir) for item in obj]
+    elif isinstance(obj, str):
+        # Check for {INCLUDE: filename} pattern
+        pattern = r'\{INCLUDE:\s*(.*?)\}'
+        matches = re.findall(pattern, obj)
+        for match in matches:
+            include_file = os.path.join(prompts_dir, match)
+            if os.path.exists(include_file):
+                with open(include_file, 'r') as f:
+                    included_content = f.read()
+                # Replace the {INCLUDE: filename} with the content
+                obj = obj.replace(f'{{INCLUDE: {match}}}', included_content)
+            else:
+                print(f"Included prompt file '{match}' not found.")
+    return obj
+
+
 # Initialize the main window
 root = tk.Tk()
 root.title("Text Processor Application")
@@ -233,6 +257,25 @@ else:
 
 # Extract global configuration
 global_config = config.get('global', {})
+
+
+# Determine the directory of the script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Directory for prompt templates
+prompts_dir = os.path.join(script_dir, 'prompts')
+
+# Load configuration file
+if os.path.exists(config_file):
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+else:
+    messagebox.showerror("Configuration Error", f"Configuration file '{config_file}' not found.")
+    sys.exit(1)
+
+# Process includes in the configuration
+config = process_includes(config, prompts_dir)
+
 
 api_key_file = global_config.get('OPEN_AI_API_KEY_FILE')
 if api_key_file:
