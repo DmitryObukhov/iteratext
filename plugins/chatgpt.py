@@ -1,5 +1,6 @@
 from openai import OpenAI
 import re
+import logging
 
 class Chatgpt:
     def __init__(self, global_config):
@@ -15,10 +16,14 @@ class Chatgpt:
         # Get the prompt template from params
         prompt_template = params.get('prompt', '')
         if not prompt_template:
-            return "Error: Prompt template not provided in function configuration."
+            error_message = "Error: Prompt template not provided in function configuration."
+            logging.error(error_message)
+            return error_message
 
         # Recursive placeholder replacement
         prompt = self.replace_placeholders(prompt_template, text, params)
+        logging.info('Outgoing prompt:')
+        logging.info(prompt)
 
         # Get model, max_tokens, and temperature from params, with default values
         model = params.get('model', 'gpt-3.5-turbo')   # Default model
@@ -38,11 +43,19 @@ class Chatgpt:
 
             # Extract the assistant's reply
             assistant_reply = response.choices[0].message.content
+
+            # Log the assistant's reply
+            logging.info('Assistant reply:')
+            logging.info(assistant_reply.strip())
+
             return assistant_reply.strip()
 
         except Exception as e:
-            return f"Error communicating with OpenAI API: {e}"
-
+            error_message = f"Error communicating with OpenAI API: {e}"
+            logging.error(error_message)
+            return error_message
+    
+    
     def replace_placeholders(self, prompt, src_text, params):
         # Function to recursively replace placeholders within the prompt
         pattern = re.compile(r'(?<!\\)\{(.*?)(?<!\\)\}')

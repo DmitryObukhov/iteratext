@@ -6,6 +6,39 @@ import yaml
 import importlib.util
 import platform
 import re
+import logging
+import tempfile
+import datetime
+
+def init_logging(global_config):
+    persistent_log = global_config.get('persistent_log', False)
+
+    # Determine log file path
+    if platform.system() == 'Linux':
+        log_dir = '/tmp'
+    else:
+        # Use the system's temporary directory for other platforms
+        log_dir = tempfile.gettempdir()
+
+    log_file = os.path.join(log_dir, 'iteratext.log')
+
+    # Set up logging configuration
+    if not persistent_log:
+        # Create a new log file for each session
+        # By setting the mode to 'w', we overwrite the existing file
+        file_mode = 'w'
+    else:
+        # Append to the existing log file
+        file_mode = 'a'
+
+    logging.basicConfig(
+        filename=log_file,
+        filemode=file_mode,
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+
+    logging.info('--- IteraText Session Started ---')
 
 
 def new_file(event=None):
@@ -15,7 +48,9 @@ def new_file(event=None):
     file_path = None
     # Clear last opened file record
     save_last_opened_file(None)
-
+    logging.info('New file created.')
+    
+    
 def open_file(event=None, path=None):
     global file_path
     if path:
@@ -33,9 +68,11 @@ def open_file(event=None, path=None):
             output_area.delete(1.0, tk.END)
             # Save the last opened file path
             save_last_opened_file(file_path)
+            logging.info(f'Opened file: {file_path}')
         except Exception as e:
             messagebox.showerror("Error", f"Failed to open file: {e}")
             file_path = None
+            logging.error(f'Failed to open file {file_path}: {e}')
 
 def save_file(event=None):
     global file_path
@@ -45,8 +82,10 @@ def save_file(event=None):
                 file.write(text_area.get(1.0, tk.END))
             # Save the last opened file path
             save_last_opened_file(file_path)
+            logging.info(f'Saved file: {file_path}')
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save file: {e}")
+            logging.error(f'Failed to save file {file_path}: {e}')
     else:
         save_as_file()
 
@@ -56,15 +95,18 @@ def save_as_file(event=None):
         defaultextension=".txt",
         filetypes=[("Text Documents", "*.txt"), ("All Files", "*.*")]
     )
+    
     if file_path:
         try:
             with open(file_path, "w") as file:
                 file.write(text_area.get(1.0, tk.END))
             # Save the last opened file path
             save_last_opened_file(file_path)
+            logging.info(f'Saved file as: {file_path}')
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save file: {e}")
-
+            logging.error(f'Failed to save file {file_path}: {e}') 
+            
 def exit_editor(event=None):
     if messagebox.askokcancel("Quit", "Do you really want to quit?"):
         root.destroy()
@@ -258,7 +300,8 @@ else:
 # Extract global configuration
 global_config = config.get('global', {})
 
-
+# Initialize logging
+init_logging(global_config)
 # Determine the directory of the script
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
