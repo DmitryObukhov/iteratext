@@ -24,3 +24,7 @@ operations:
     parameters:
       sentences: 2  # Optional: Number of sentences to return from the summary
 
+  - name: Thesaurus Lookup
+    function: thesaurus
+    parameters:
+      part_of_speech: null  # Optional, not used in this version
