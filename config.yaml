@@ -1,0 +1,26 @@
+global:
+  OPEN_AI_API_KEY_FILE: "~/default_openai_api_key.txt"
+
+operations:
+  - name: Uppercase
+    function: basicops
+    parameters:
+      operation: uppercase
+
+  - name: Lowercase
+    function: basicops
+    parameters:
+      operation: lowercase
+
+  - name: Reverse
+    function: basicops
+    parameters:
+      operation: reverse
+
+  - name: ChatGPT
+    function: chatgpt
+    parameters:
+      prompt: "Write a haiku about testing unreliable hardware:\n\n{SRC_TEXT}"
+      model: "gpt-3.5-turbo"
+      max_tokens: 100
+      temperature: 0.7
